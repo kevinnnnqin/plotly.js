@@ -1,10 +1,10 @@
-var Plotly = require('@lib');
+var Plotly = require('@lib/index');
 var Lib = require('@src/lib');
 var ScatterPolar = require('@src/traces/scatterpolar');
 
 var createGraphDiv = require('../assets/create_graph_div');
 var destroyGraphDiv = require('../assets/destroy_graph_div');
-var failTest = require('../assets/fail_test');
+
 var mouseEvent = require('../assets/mouse_event');
 
 var customAssertions = require('../assets/custom_assertions');
@@ -100,7 +100,7 @@ describe('Test scatterpolar hover:', function() {
 
         var pos = specs.pos || [200, 200];
 
-        return Plotly.plot(gd, fig).then(function() {
+        return Plotly.newPlot(gd, fig).then(function() {
             mouseEvent('mousemove', pos[0], pos[1]);
             assertHoverLabelContent(specs);
         });
@@ -192,10 +192,34 @@ describe('Test scatterpolar hover:', function() {
         },
         nums: 'r: 4.022892\nθ: 128.342°\n4.02289202968',
         name: 'Trial 3'
+    }, {
+        desc: 'with prefix and suffix',
+        patch: function(fig) {
+            fig.layout.polar.radialaxis.tickprefix = '(';
+            fig.layout.polar.radialaxis.ticksuffix = ')';
+            fig.layout.polar.angularaxis.tickprefix = '[';
+            fig.layout.polar.angularaxis.ticksuffix = ']';
+            return fig;
+        },
+        nums: 'r: (4.022892)\nθ: [128.342]',
+        name: 'Trial 3'
+    }, {
+        desc: 'with prefix and suffix on invisible axes',
+        patch: function(fig) {
+            fig.layout.polar.radialaxis.visible = false,
+            fig.layout.polar.radialaxis.tickprefix = '(';
+            fig.layout.polar.radialaxis.ticksuffix = ')';
+            fig.layout.polar.angularaxis.visible = false;
+            fig.layout.polar.angularaxis.tickprefix = '[';
+            fig.layout.polar.angularaxis.ticksuffix = ']';
+            return fig;
+        },
+        nums: 'r: (4.022892)\nθ: [128.342]',
+        name: 'Trial 3'
     }]
     .forEach(function(specs) {
         it('should generate correct hover labels ' + specs.desc, function(done) {
-            run(specs).catch(failTest).then(done);
+            run(specs).then(done, done.fail);
         });
     });
 });

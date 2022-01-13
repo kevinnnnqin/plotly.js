@@ -1,12 +1,9 @@
 var Plotly = require('@lib/index');
 var Lib = require('@src/lib');
 
-var helpers = require('@src/snapshot/helpers');
-var getImageSize = require('@src/traces/image/helpers').getImageSize;
-
 var createGraphDiv = require('../assets/create_graph_div');
 var destroyGraphDiv = require('../assets/destroy_graph_div');
-var failTest = require('../assets/fail_test');
+
 
 var textchartMock = require('@mocks/text_chart_arrays.json');
 var LONG_TIMEOUT_INTERVAL = 2 * jasmine.DEFAULT_TIMEOUT_INTERVAL;
@@ -43,28 +40,24 @@ describe('Plotly.downloadImage', function() {
 
     it('should create link, remove link, accept options', function(done) {
         downloadTest(gd, 'jpeg')
-        .catch(failTest)
-        .then(done);
+        .then(done, done.fail);
     }, LONG_TIMEOUT_INTERVAL);
 
     it('should create link, remove link, accept options', function(done) {
         downloadTest(gd, 'png')
-        .catch(failTest)
-        .then(done);
+        .then(done, done.fail);
     }, LONG_TIMEOUT_INTERVAL);
 
     it('should create link, remove link, accept options', function(done) {
         downloadTest(gd, 'full-json')
-        .catch(failTest)
-        .then(done);
+        .then(done, done.fail);
     }, LONG_TIMEOUT_INTERVAL);
 
     it('should create link, remove link, accept options', function(done) {
         checkWebp(function(supported) {
             if(supported) {
                 downloadTest(gd, 'webp')
-                .catch(failTest)
-                .then(done);
+                .then(done, done.fail);
             } else {
                 done();
             }
@@ -73,14 +66,12 @@ describe('Plotly.downloadImage', function() {
 
     it('should create link, remove link, accept options', function(done) {
         downloadTest(gd, 'svg')
-        .catch(failTest)
-        .then(done);
+        .then(done, done.fail);
     }, LONG_TIMEOUT_INTERVAL);
 
     it('should work when passing graph div id', function(done) {
         downloadTest('graph', 'svg')
-        .catch(failTest)
-        .then(done);
+        .then(done, done.fail);
     }, LONG_TIMEOUT_INTERVAL);
 
     it('should work when passing a figure object', function(done) {
@@ -93,8 +84,7 @@ describe('Plotly.downloadImage', function() {
             expect(gd._snapshotInProgress)
                 .toBe(undefined, 'should not attach _snapshotInProgress to figure objects');
         })
-        .catch(failTest)
-        .then(done);
+        .then(done, done.fail);
     }, LONG_TIMEOUT_INTERVAL);
 
     it('should produce the right SVG output in IE', function(done) {
@@ -111,7 +101,7 @@ describe('Plotly.downloadImage', function() {
         var plotClip = /clip-path='url\("#clip[0-9a-f]{6}xyplot"\)/;
         var legendClip = /clip-path=\'url\("#legend[0-9a-f]{6}"\)/;
 
-        Plotly.plot(gd, textchartMock.data, textchartMock.layout)
+        Plotly.newPlot(gd, textchartMock.data, textchartMock.layout)
         .then(function(gd) {
             savedBlob = undefined;
             return Plotly.downloadImage(gd, {
@@ -142,56 +132,8 @@ describe('Plotly.downloadImage', function() {
                 reader.readAsText(savedBlob);
             });
         })
-        .catch(failTest)
-        .then(done);
+        .then(done, done.fail);
     }, LONG_TIMEOUT_INTERVAL);
-
-    it('should produce right output in Safari', function(done) {
-        spyOn(Lib, 'isSafari').and.callFake(function() { return true; });
-        spyOn(helpers, 'octetStream');
-
-        Plotly.plot(gd, textchartMock.data, textchartMock.layout)
-        .then(function() { return Plotly.downloadImage(gd, {format: 'svg'}); })
-        .then(function() { return Plotly.downloadImage(gd, {format: 'png'}); })
-        .then(function() { return Plotly.downloadImage(gd, {format: 'jpeg'}); })
-        .then(function() { return Plotly.downloadImage(gd, {format: 'webp'}); })
-        .then(function() {
-            var args = helpers.octetStream.calls.allArgs();
-            expect(args[0][0].slice(0, 15)).toBe(',%3Csvg%20class', 'format:svg');
-            expect(args[1][0].slice(0, 8)).toBe(';base64,', 'format:png');
-            expect(args[2][0].slice(0, 8)).toBe(';base64,', 'format:jpeg');
-            expect(args[3][0].slice(0, 8)).toBe(';base64,', 'format:webp');
-        })
-        .catch(failTest)
-        .then(done);
-    });
-
-    it('should default width & height for downloadImage to match with the live graph', function(done) {
-        spyOn(Lib, 'isSafari').and.callFake(function() { return true; });
-        spyOn(helpers, 'octetStream');
-
-        var fig = {
-            data: [{y: [0, 1]}]
-        };
-
-        gd.style.width = '500px';
-        gd.style.height = '300px';
-
-        Plotly.plot(gd, fig)
-        .then(function() { return Plotly.downloadImage(gd, {format: 'png'}); })
-        .then(function() {
-            var args = helpers.octetStream.calls.allArgs();
-            var blob = args[0][0];
-            expect(blob.slice(0, 8)).toBe(';base64,', 'format:png');
-            var size = getImageSize('data:image/png' + blob);
-            expect(size.width).toBe(gd._fullLayout.width, 'fullLayout width');
-            expect(size.height).toBe(gd._fullLayout.height, 'fullLayout height');
-            expect(size.width).toBe(500, 'div width');
-            expect(size.height).toBe(300, 'div height');
-        })
-        .catch(failTest)
-        .then(done);
-    });
 });
 
 function downloadTest(gd, format) {
@@ -210,7 +152,7 @@ function downloadTest(gd, format) {
         });
     });
 
-    return Plotly.plot(gd, textchartMock.data, textchartMock.layout).then(function(_gd) {
+    return Plotly.newPlot(gd, textchartMock.data, textchartMock.layout).then(function(_gd) {
         // start observing dom
         // configuration of the observer:
         var config = { childList: true };
